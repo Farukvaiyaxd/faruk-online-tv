@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="display" content="standalone">
+    
+    <title>Online Tv - Premium IPTV</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HLS.js -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            will-change: transform, opacity;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
+
+        .loader-circle {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #3b82f6; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .img-loaded { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #mobile-categories::-webkit-scrollbar { display: none; }
+        
+        /* Resizable Player Enhancements */
+        #player-modal { 
+            touch-action: none; 
+            will-change: left, top, width, height; 
+            resize: both; 
+            overflow: hidden;
+        }
+        
+        #player-modal::-webkit-resizer {
+            background-color: transparent;
+            border-left: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid rgba(255,255,255,0.3);
+        }
+
+        /* Toast Animation */
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .toast-enter { animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+        .toast-exit { animation: fadeOut 0.3s ease-out forwards; }
+
+        /* List View Support */
+        .layout-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .layout-list .glass-card { flex-direction: row !important; align-items: center; padding: 0.75rem; height: auto !important; }
+        .layout-list .glass-card .w-full.h-20 { width: 80px; height: 60px; margin-bottom: 0; margin-right: 1rem; flex-shrink: 0; }
+        .layout-list .glass-card .mt-auto { margin-top: 0; flex: 1; display: flex; justify-content: space-between; align-items: center; }
+        .layout-list .glass-card .mt-auto > div { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        .layout-list .fav-btn { position: relative; top: auto; right: auto; margin-left: 1rem; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white overflow-hidden h-screen flex select-none relative">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Loading Screen -->
+    <div id="loader" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="loader-circle mb-4"></div>
+        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">Online Tv</h1>
+        <p class="text-slate-400 mt-2 text-sm">Loading Premium Channels...</p>
+    </div>
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- Responsive Sidebar -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 glass-panel border-r border-white/10 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
+        <div class="p-5 flex justify-between items-center border-b border-white/10">
+            <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-600 tracking-wider">
+                <i class="fa-solid fa-tv mr-2"></i>Online Tv
+            </h1>
+            <button class="md:hidden text-slate-400 hover:text-white" onclick="toggleSidebar()">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto custom-scrollbar px-2 py-4 space-y-1" id="sidebar-nav"></nav>
+
+        <div class="p-5 border-t border-white/10 bg-black/20 flex flex-col gap-2">
+            <!-- Install PWA Button -->
+            <button id="install-btn-sidebar" onclick="installApp()" class="hidden w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2 rounded-lg transition shadow-lg text-sm mb-1">
+                <i class="fa-brands fa-chrome"></i> Install App
+            </button>
+
+            <button onclick="openSettings()" class="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-300 py-2 rounded-lg transition text-sm">
+                <i class="fa-solid fa-gear"></i> Settings
+            </button>
+            <div class="flex items-center justify-between text-sm text-slate-300 mt-1">
+                <span><i class="fa-solid fa-signal text-green-400 mr-2"></i> Total Live:</span>
+                <span id="total-channels" class="font-bold text-white bg-blue-600 px-2 py-0.5 rounded text-xs">0</span>
+            </div>
+            <div class="flex items-center justify-between text-sm text-slate-300 mt-1">
+                <span><i class="fa-regular fa-clock mr-2"></i> Time:</span>
+                <span id="real-time" class="font-bold text-white">00:00</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full relative w-full">
+        
+        <!-- Header -->
+        <header class="glass-panel z-10 sticky top-0 px-4 py-3 flex items-center gap-3 border-b border-white/10">
+            <button onclick="toggleSidebar()" class="md:hidden text-white/80 hover:text-white p-2 rounded-lg bg-white/5">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+
+            <div class="flex-1">
+                <div class="relative max-w-2xl">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="Search channels, sports, news..." class="w-full bg-black/30 border border-white/10 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:border-blue-500 focus:bg-white/10 transition-all text-sm text-white">
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-3">
+                <a href="/" class="text-slate-400 hover:text-white text-sm mr-2 transition"><i class="fa-solid fa-home"></i> Main Home</a>
+                <button onclick="openSettings()" class="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition" title="Settings">
+                    <i class="fa-solid fa-cog"></i>
+                </button>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 p-0.5 cursor-pointer">
+                    <img src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" class="w-full h-full rounded-full">
+                </div>
+            </div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24 md:pb-6" id="main-scroll">
+            
+            <!-- Hero Banner -->
+            <div id="hero-banner" class="w-full h-60 md:h-80 rounded-2xl relative overflow-hidden mb-8 group cursor-pointer shadow-2xl shadow-blue-900/20">
+                <img id="hero-bg" src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Hero" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-6 md:p-10 w-full">
+                    <span class="bg-red-600 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded animate-pulse mb-3 inline-block">LIVE TV</span>
+                    <h2 class="text-2xl md:text-5xl font-black mb-2 drop-shadow-lg" id="hero-title">Featured Channel</h2>
+                    <p class="text-slate-300 mb-4 max-w-lg hidden md:block text-sm">Watch premium sports, movies, and news live in HD quality. Experience the best IPTV streaming right now.</p>
+                    <button class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i> Watch Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Categories Mobile Filter -->
+            <div class="md:hidden flex gap-2 overflow-x-auto custom-scrollbar pb-2 mb-4" id="mobile-categories"></div>
+
+            <!-- Grid Title & Controls -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-3">
+                <h3 class="text-xl font-bold flex items-center gap-2" id="grid-title">All Channels</h3>
+                
+                <div class="flex items-center gap-3">
+                    <select id="sort-select" class="bg-black/40 border border-white/10 rounded-lg py-1.5 px-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500" onchange="applySorting(this.value)">
+                        <option value="default">Sort: Default</option>
+                        <option value="az">A - Z</option>
+                        <option value="za">Z - A</option>
+                    </select>
+                    <div class="flex bg-black/40 border border-white/10 rounded-lg overflow-hidden">
+                        <button onclick="toggleLayout('grid')" id="btn-grid" class="px-3 py-1.5 bg-blue-600 text-white transition"><i class="fa-solid fa-th"></i></button>
+                        <button onclick="toggleLayout('list')" id="btn-list" class="px-3 py-1.5 text-slate-400 hover:text-white transition"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Channel Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5" id="channel-grid"></div>
+            <!-- Loading indicator for scroll -->
+            <div id="scroll-loader" class="hidden text-center py-5 text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading more...</div>
+
+            <footer class="mt-12 pt-6 border-t border-white/10 text-center text-xs text-slate-500 pb-10 md:pb-0">
+                © 2026 Online Tv - Premium IPTV Streaming.
+            </footer>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 w-full glass-panel border-t border-white/10 z-20 pb-safe">
+        <div class="flex justify-around items-center p-3">
+            <a href="/" class="flex flex-col items-center text-slate-400 hover:text-blue-400 transition">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+                <span class="text-[10px] mt-1">Back</span>
+            </a>
+            <button class="flex flex-col items-center text-blue-400" onclick="filterBy('category', 'All')">
+                <i class="fa-solid fa-house text-xl"></i>
+                <span class="text-[10px] mt-1">Home</span>
+            </button>
+            <button class="flex flex-col items-center text-slate-400 hover:text-blue-400 transition" onclick="filterBy('category', 'Favorites')">
+                <i class="fa-solid fa-heart text-xl"></i>
+                <span class="text-[10px] mt-1">Favs</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Floating Draggable & Resizable Mini Player -->
+    <div id="player-modal" style="min-width: 250px; min-height: 180px;" class="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-[200] w-[320px] h-[220px] md:w-[400px] md:h-[260px] bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 hidden flex-col">
+        <div id="player-header" class="flex justify-between items-center px-3 py-2 bg-slate-800 cursor-grab active:cursor-grabbing border-b border-white/10 select-none shrink-0">
+            <div class="flex items-center gap-2 pointer-events-none">
+                <img id="player-logo" src="" class="w-5 h-5 rounded-full bg-white/10 object-contain">
+                <h3 id="player-title" class="font-bold text-xs text-white truncate max-w-[120px]">Channel</h3>
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-1"></span>
+            </div>
+            <div class="flex items-center gap-2 md:gap-3">
+                <button onclick="toggleMute(event)" class="text-white/60 hover:text-white" title="Mute/Unmute (M)"><i id="mute-icon" class="fa-solid fa-volume-high text-xs"></i></button>
+                <button onclick="togglePiP(event)" class="text-white/60 hover:text-white" title="Picture in Picture"><i class="fa-solid fa-clone text-xs"></i></button>
+                <button onclick="toggleFullscreen(event)" class="text-white/60 hover:text-white" title="Full Screen (F)"><i class="fa-solid fa-expand text-xs"></i></button>
+                <button onclick="closePlayer(event)" class="text-white/60 hover:text-red-500" title="Close (Esc)"><i class="fa-solid fa-times"></i></button>
+            </div>
+        </div>
+        <div class="relative w-full flex-1 bg-black flex items-center justify-center">
+            <div id="player-loader" class="absolute inset-0 flex items-center justify-center z-0">
+                <div class="loader-circle border-t-blue-500 w-8 h-8 border-[3px]"></div>
+            </div>
+            <video id="video-player" class="w-full h-full object-contain outline-none z-10" controls autoplay playsinline></video>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[500] bg-black/70 flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-slate-800 border border-white/10 rounded-2xl w-11/12 max-w-md p-6 shadow-2xl scale-95 transition-transform duration-300" id="settings-content">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold"><i class="fa-solid fa-gear mr-2 text-blue-500"></i> Settings</h2>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold text-sm">Clear Favorites</h4>
+                        <p class="text-xs text-slate-400">Remove all saved favorites</p>
+                    </div>
+                    <button onclick="clearData('favorites')" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition">Clear</button>
+                </div>
+                
+                <div class="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold text-sm">Clear Watch History</h4>
+                        <p class="text-xs text-slate-400">Remove recently watched list</p>
+                    </div>
+                    <button onclick="clearData('history')" class="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500 hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition">Clear</button>
+                </div>
+
+                <div class="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold text-sm">Keyboard Shortcuts</h4>
+                        <p class="text-xs text-slate-400 mt-1">
+                            <span class="bg-black/50 px-1.5 py-0.5 rounded mr-1">F</span> Fullscreen<br>
+                            <span class="bg-black/50 px-1.5 py-0.5 rounded mr-1 mt-1 inline-block">M</span> Mute<br>
+                            <span class="bg-black/50 px-1.5 py-0.5 rounded mr-1 mt-1 inline-block">Esc</span> Close Player
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <button onclick="closeSettings()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-full text-sm font-semibold transition w-full">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // PWA Setup
+        function setupPWA() {
+            const manifest = {
+                "name": "FarukBro Premium TV",
+                "short_name": "FarukBro TV",
+                "start_url": window.location.href,
+                "display": "standalone",
+                "background_color": "#0f172a",
+                "theme_color": "#0f172a",
+                "description": "Watch Premium Live TV Channels",
+                "icons": [{
+                    "src": "https://ui-avatars.com/api/?name=TV&background=0D8ABC&color=fff&size=512",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestUrl;
+            document.head.appendChild(link);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `self.addEventListener('fetch', function(e) {});`;
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+            }
+        }
+        setupPWA();
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn-sidebar').classList.remove('hidden');
+        });
+
+        window.installApp = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') showToast('App installed successfully!', 'success');
+                deferredPrompt = null;
+                document.getElementById('install-btn-sidebar').classList.add('hidden');
+            }
+        }
+
+        let channelsData = [];
+        let filteredChannels = [];
+        let favorites = JSON.parse(localStorage.getItem('onlineTvFavs')) || [];
+        let watchHistory = JSON.parse(localStorage.getItem('onlineTvHistory')) || [];
+        
+        let categoryCounts = { 'All': 0, 'Favorites': favorites.length, 'History': watchHistory.length };
+        let countryCounts = { 'All': 0 };
+        let currentCategory = 'All';
+        let currentLayout = 'grid'; 
+        let currentSort = 'default';
+
+        let currentRenderIndex = 0;
+        const CHUNK_SIZE = 40; 
+
+        const JSON_URL = 'https://raw.githubusercontent.com/foridul422/IPTV-/main/channels.json';
+
+        const gridContainer = document.getElementById('channel-grid');
+        const mainScroll = document.getElementById('main-scroll');
+        const scrollLoader = document.getElementById('scroll-loader');
+        const searchInput = document.getElementById('search-input');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        const mobileCategories = document.getElementById('mobile-categories');
+        const loader = document.getElementById('loader');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toastContainer = document.getElementById('toast-container');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            startClock();
+            fetchChannels();
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '<i class="fa-solid fa-check-circle text-green-400"></i>' : 
+                         type === 'error' ? '<i class="fa-solid fa-exclamation-circle text-red-400"></i>' : 
+                         '<i class="fa-solid fa-info-circle text-blue-400"></i>';
+            
+            toast.className = `glass-panel px-4 py-3 rounded-lg shadow-lg border border-white/10 flex items-center gap-3 toast-enter pointer-events-auto`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium text-white">${message}</span>`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.toggleSidebar = function() {
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+            if(isClosed) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function startClock() {
+            setInterval(() => {
+                document.getElementById('real-time').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }, 1000);
+        }
+
+        async function fetchChannels() {
+            gridContainer.innerHTML = Array(10).fill(`<div class="glass-card rounded-xl p-3 animate-pulse h-32"></div>`).join('');
+            try {
+                const res = await fetch(JSON_URL);
+                const data = await res.json();
+                
+                channelsData = data.filter(ch => ch.url).map((ch, index) => {
+                    const cat = ch.category || 'Other';
+                    const cntry = ch.country || 'Global';
+                    
+                    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                    countryCounts[cntry] = (countryCounts[cntry] || 0) + 1;
+                    categoryCounts['All']++;
+                    countryCounts['All']++;
+
+                    return {
+                        id: 'ch_' + index,
+                        name: ch.name || 'Unknown',
+                        logo: ch.logo || 'https://via.placeholder.com/100/0f172a/3b82f6?text=TV',
+                        url: ch.url,
+                        category: cat,
+                        country: cntry
+                    };
+                });
+
+                filteredChannels = [...channelsData];
+                document.getElementById('total-channels').innerText = channelsData.length;
+                
+                renderSidebar();
+                applySorting(currentSort); 
+                setupHero();
+                
+                setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }, 500);
+            } catch (error) {
+                gridContainer.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Error loading channels!</div>`;
+                loader.style.display = 'none';
+                showToast("Failed to load channels", "error");
+            }
+        }
+
+        function setupHero() {
+            if(channelsData.length > 0) {
+                const randomChannel = channelsData[Math.floor(Math.random() * Math.min(30, channelsData.length))];
+                document.getElementById('hero-title').innerText = randomChannel.name;
+                document.getElementById('hero-banner').onclick = () => openPlayer(randomChannel);
+            }
+        }
+
+        function renderSidebar() {
+            let html = `<div class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Categories</div>`;
+            let mobileHtml = '';
+            
+            Object.keys(categoryCounts).forEach(cat => {
+                let count = categoryCounts[cat];
+                if(cat === 'Favorites') count = favorites.length;
+                if(cat === 'History') count = watchHistory.length;
+
+                const active = currentCategory === cat ? 'bg-blue-600/20 text-blue-400 border-blue-500' : 'text-slate-300 hover:bg-white/5 border-transparent';
+                const icon = cat === 'All' ? 'fa-tv' : cat === 'Favorites' ? 'fa-heart text-red-400' : cat === 'History' ? 'fa-clock-rotate-left text-yellow-400' : 'fa-folder';
+                
+                html += `
+                <button onclick="filterBy('category', '${cat}')" class="w-full flex justify-between items-center px-3 py-2.5 rounded-r-lg border-l-4 transition-all mb-1 ${active}">
+                    <div class="flex items-center gap-3"><i class="fa-solid ${icon} w-4 text-center"></i> <span class="font-medium text-sm">${cat}</span></div>
+                    <span class="text-[10px] bg-black/40 px-2 py-0.5 rounded-full">${count}</span>
+                </button>`;
+
+                if(cat !== 'History') {
+                    const mobActive = currentCategory === cat ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-300 border border-white/10';
+                    mobileHtml += `
+                    <button onclick="filterBy('category', '${cat}')" class="px-4 py-1.5 rounded-full whitespace-nowrap text-xs transition-colors ${mobActive}">
+                        ${cat} (${count})
+                    </button>`;
+                }
+            });
+
+            html += `<div class="px-3 py-2 mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Countries</div>`;
+            
+            Object.keys(countryCounts).forEach(cntry => {
+                if(cntry === 'All') return;
+                const active = currentCategory === `country_${cntry}` ? 'bg-blue-600/20 text-blue-400 border-blue-500' : 'text-slate-300 hover:bg-white/5 border-transparent';
+                html += `
+                <button onclick="filterBy('country', '${cntry}')" class="w-full flex justify-between items-center px-3 py-2 rounded-r-lg border-l-4 transition-all mb-1 ${active}">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-globe w-4 text-center"></i> <span class="font-medium text-sm">${cntry}</span></div>
+                    <span class="text-[10px] bg-black/40 px-2 py-0.5 rounded-full">${countryCounts[cntry]}</span>
+                </button>`;
+            });
+
+            sidebarNav.innerHTML = html;
+            mobileCategories.innerHTML = mobileHtml;
+        }
+
+        const statusObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const card = entry.target;
+                    const url = card.dataset.url;
+                    const badgeId = card.dataset.id;
+                    checkLiveStatus(url, badgeId);
+                    observer.unobserve(card);
+                }
+            });
+        }, { rootMargin: '100px' });
+
+        async function checkLiveStatus(url, badgeId) {
+            const badge = document.getElementById(`status_${badgeId}`);
+            if(!badge) return;
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 4000);
+                await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+                clearTimeout(timeout);
+                badge.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-green-500 animate-pulse mr-1"></i> Online`;
+                badge.classList.replace('text-yellow-400', 'text-green-400');
+            } catch (e) {
+                badge.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-red-500 mr-1"></i> Offline`;
+                badge.classList.replace('text-yellow-400', 'text-slate-500');
+            }
+        }
+
+        window.toggleLayout = function(type) {
+            currentLayout = type;
+            const btnGrid = document.getElementById('btn-grid');
+            const btnList = document.getElementById('btn-list');
+            
+            if(type === 'grid') {
+                gridContainer.classList.remove('layout-list');
+                gridContainer.classList.add('grid', 'grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4', 'xl:grid-cols-5');
+                btnGrid.classList.replace('text-slate-400', 'text-white'); btnGrid.classList.add('bg-blue-600'); btnGrid.classList.remove('hover:text-white');
+                btnList.classList.replace('text-white', 'text-slate-400'); btnList.classList.remove('bg-blue-600'); btnList.classList.add('hover:text-white');
+            } else {
+                gridContainer.classList.add('layout-list');
+                gridContainer.classList.remove('grid', 'grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4', 'xl:grid-cols-5');
+                btnList.classList.replace('text-slate-400', 'text-white'); btnList.classList.add('bg-blue-600'); btnList.classList.remove('hover:text-white');
+                btnGrid.classList.replace('text-white', 'text-slate-400'); btnGrid.classList.remove('bg-blue-600'); btnGrid.classList.add('hover:text-white');
+            }
+        }
+
+        window.applySorting = function(type) {
+            currentSort = type;
+            let sorted = [...filteredChannels];
+            
+            if(type === 'az') sorted.sort((a,b) => a.name.localeCompare(b.name));
+            else if (type === 'za') sorted.sort((a,b) => b.name.localeCompare(a.name));
+            
+            filteredChannels = sorted;
+            renderChannels(filteredChannels, false);
+        }
+
+        function renderChannels(channels, append = false) {
+            if (!append) {
+                gridContainer.innerHTML = '';
+                currentRenderIndex = 0;
+            }
+            if (channels.length === 0 && !append) {
+                gridContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">No channels found.</div>`;
+                scrollLoader.classList.add('hidden');
+                return;
+            }
+
+            const chunk = channels.slice(currentRenderIndex, currentRenderIndex + CHUNK_SIZE);
+            if (chunk.length === 0) {
+                scrollLoader.classList.add('hidden');
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            chunk.forEach(ch => {
+                const isFav = favorites.some(f => f.name === ch.name);
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-xl p-2 md:p-3 relative group cursor-pointer flex flex-col';
+                card.dataset.url = ch.url;
+                card.dataset.id = ch.id;
+                
+                card.onclick = (e) => { if(!e.target.closest('.fav-btn')) openPlayer(ch); };
+
+                card.innerHTML = `
+                    <button class="fav-btn absolute top-1 right-1 z-10 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-blue-500 transition" onclick="toggleFav('${ch.name}', event)" title="Favorite">
+                        <i class="${isFav ? 'fa-solid text-red-500' : 'fa-regular text-white'} fa-heart text-xs"></i>
+                    </button>
+                    <div class="w-full h-20 md:h-24 bg-white/5 rounded-lg mb-2 flex items-center justify-center p-2 relative overflow-hidden shrink-0">
+                        <img src="${ch.logo}" alt="" loading="lazy" class="max-h-full max-w-full object-contain img-loaded" onerror="this.src='https://via.placeholder.com/100/0f172a/3b82f6?text=TV'">
+                        <div class="absolute inset-0 bg-blue-500/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <i class="fa-solid fa-play text-2xl text-white"></i>
+                        </div>
+                    </div>
+                    <div class="mt-auto w-full">
+                        <h4 class="font-bold text-[13px] md:text-sm truncate text-white" title="${ch.name}">${ch.name}</h4>
+                        <div class="flex justify-between items-center mt-1 w-full">
+                            <span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-300">${ch.country}</span>
+                            <span id="status_${ch.id}" class="text-[9px] font-medium text-yellow-400 flex items-center">
+                                <i class="fa-solid fa-spinner fa-spin mr-1"></i> Checking
+                            </span>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(card);
+                statusObserver.observe(card);
+            });
+
+            gridContainer.appendChild(fragment);
+            currentRenderIndex += CHUNK_SIZE;
+
+            if(currentRenderIndex < channels.length) {
+                scrollLoader.classList.remove('hidden');
+            } else {
+                scrollLoader.classList.add('hidden');
+            }
+        }
+
+        mainScroll.addEventListener('scroll', () => {
+            if (mainScroll.scrollTop + mainScroll.clientHeight >= mainScroll.scrollHeight - 300) {
+                if (currentRenderIndex < filteredChannels.length) {
+                    renderChannels(filteredChannels, true);
+                }
+            }
+        });
+
+        window.filterBy = function(type, val) {
+            if(window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+            
+            if(type === 'category') {
+                currentCategory = val;
+                if(val === 'Favorites') filteredChannels = favorites;
+                else if(val === 'History') filteredChannels = watchHistory;
+                else if (val === 'All') filteredChannels = channelsData;
+                else filteredChannels = channelsData.filter(c => c.category === val);
+                document.getElementById('grid-title').innerHTML = `${val} <span class="text-xs bg-blue-600 px-2 py-1 rounded-full text-white ml-2">${filteredChannels.length}</span>`;
+            } else {
+                currentCategory = `country_${val}`;
+                filteredChannels = channelsData.filter(c => c.country === val);
+                document.getElementById('grid-title').innerHTML = `${val} Channels <span class="text-xs bg-blue-600 px-2 py-1 rounded-full text-white ml-2">${filteredChannels.length}</span>`;
+            }
+            
+            searchInput.value = '';
+            renderSidebar();
+            applySorting(currentSort);
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            filteredChannels = channelsData.filter(c => c.name.toLowerCase().includes(term));
+            applySorting(currentSort);
+        });
+
+        window.toggleFav = function(name, e) {
+            e.stopPropagation();
+            const ch = channelsData.find(c => c.name === name) || watchHistory.find(c => c.name === name);
+            if(!ch) return;
+            
+            const idx = favorites.findIndex(f => f.name === name);
+            if(idx > -1) {
+                favorites.splice(idx, 1);
+                showToast(`${name} removed from favorites`, 'info');
+            } else {
+                favorites.unshift(ch);
+                showToast(`${name} added to favorites!`, 'success');
+            }
+            
+            localStorage.setItem('onlineTvFavs', JSON.stringify(favorites));
+            categoryCounts['Favorites'] = favorites.length;
+            renderSidebar();
+            
+            if(currentCategory === 'Favorites') applySorting(currentSort);
+            else {
+                const btn = e.currentTarget;
+                if(idx > -1) btn.innerHTML = `<i class="fa-regular text-white fa-heart text-xs"></i>`;
+                else btn.innerHTML = `<i class="fa-solid text-red-500 fa-heart text-xs"></i>`;
+            }
+        }
+
+        const modal = document.getElementById('player-modal');
+        const header = document.getElementById('player-header');
+        const video = document.getElementById('video-player');
+        const ploader = document.getElementById('player-loader');
+        const muteIcon = document.getElementById('mute-icon');
+        let hls;
+
+        window.openPlayer = function(ch) {
+            const hIdx = watchHistory.findIndex(h => h.name === ch.name);
+            if(hIdx > -1) watchHistory.splice(hIdx, 1);
+            watchHistory.unshift(ch);
+            if(watchHistory.length > 30) watchHistory.pop(); 
+            localStorage.setItem('onlineTvHistory', JSON.stringify(watchHistory));
+            categoryCounts['History'] = watchHistory.length;
+            renderSidebar();
+
+            document.getElementById('player-title').innerText = ch.name;
+            document.getElementById('player-logo').src = ch.logo;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            modal.style.left = ''; modal.style.top = '';
+            modal.style.bottom = window.innerWidth < 768 ? '80px' : '32px';
+            modal.style.right = window.innerWidth < 768 ? '16px' : '32px';
+
+            ploader.style.display = 'flex';
+
+            if (Hls.isSupported()) {
+                if(hls) hls.destroy();
+                hls = new Hls();
+                hls.loadSource(ch.url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => { ploader.style.display = 'none'; video.play().catch(()=>{}); });
+                hls.on(Hls.Events.ERROR, (e, d) => { if (d.fatal) { showToast('Stream Offline or Error', 'error'); closePlayer(); } });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = ch.url;
+                video.onloadedmetadata = () => { ploader.style.display = 'none'; video.play(); };
+            }
+        }
+
+        window.closePlayer = function(e) {
+            if(e) e.stopPropagation();
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+            video.pause(); video.removeAttribute('src');
+            if(hls) hls.destroy();
+            if(document.pictureInPictureElement) document.exitPictureInPicture().catch(()=>{});
+        }
+
+        window.toggleFullscreen = function(e) {
+            if(e) e.stopPropagation();
+            if(!video.src && !hls) return;
+            if (video.requestFullscreen) video.requestFullscreen();
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+        }
+
+        window.toggleMute = function(e) {
+            if(e) e.stopPropagation();
+            video.muted = !video.muted;
+            muteIcon.className = video.muted ? 'fa-solid fa-volume-xmark text-xs text-red-400' : 'fa-solid fa-volume-high text-xs';
+        }
+
+        window.togglePiP = async function(e) {
+            if(e) e.stopPropagation();
+            if(!video.src && !hls) return;
+            try {
+                if (document.pictureInPictureElement) await document.exitPictureInPicture();
+                else if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+                else showToast("PiP not supported on this browser.", "error");
+            } catch (err) {
+                showToast("Failed to enter PiP mode", "error");
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(modal.classList.contains('hidden') || document.activeElement === searchInput) return;
+            if(e.key.toLowerCase() === 'f') toggleFullscreen();
+            if(e.key.toLowerCase() === 'm') toggleMute();
+            if(e.key === 'Escape') closePlayer();
+        });
+
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsContent = document.getElementById('settings-content');
+
+        window.openSettings = function() {
+            settingsModal.classList.remove('hidden');
+            setTimeout(() => settingsContent.classList.remove('scale-95'), 10);
+        }
+
+        window.closeSettings = function() {
+            settingsContent.classList.add('scale-95');
+            setTimeout(() => settingsModal.classList.add('hidden'), 300);
+        }
+
+        window.clearData = function(type) {
+            if(type === 'favorites') {
+                favorites = [];
+                localStorage.setItem('onlineTvFavs', JSON.stringify(favorites));
+                categoryCounts['Favorites'] = 0;
+                showToast("Favorites cleared!", "success");
+            } else if (type === 'history') {
+                watchHistory = [];
+                localStorage.setItem('onlineTvHistory', JSON.stringify(watchHistory));
+                categoryCounts['History'] = 0;
+                showToast("Watch history cleared!", "success");
+            }
+            renderSidebar();
+            if(currentCategory === 'Favorites' || currentCategory === 'History') filterBy('category', 'All');
+        }
+
+        let isDrag = false, startX, startY, initL, initT;
+        let cachedWinW, cachedWinH, cachedModW, cachedModH;
+        let dragRAF;
+
+        function dragStart(e) {
+            if(e.target.closest('button')) return;
+            isDrag = true;
+            
+            const cx = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const cy = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            const rect = modal.getBoundingClientRect();
+            
+            startX = cx; startY = cy; 
+            initL = rect.left; initT = rect.top;
+            
+            cachedWinW = window.innerWidth;
+            cachedWinH = window.innerHeight;
+            cachedModW = modal.offsetWidth;
+            cachedModH = modal.offsetHeight;
+
+            modal.style.bottom = 'auto'; modal.style.right = 'auto';
+            modal.style.left = initL + 'px'; modal.style.top = initT + 'px';
+            document.body.style.userSelect = 'none'; 
+        }
+
+        function dragging(e) {
+            if (!isDrag) return;
+            e.preventDefault();
+
+            const cx = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const cy = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            
+            if(dragRAF) cancelAnimationFrame(dragRAF);
+            
+            dragRAF = requestAnimationFrame(() => {
+                let nL = initL + (cx - startX), nT = initT + (cy - startY);
+                nL = Math.max(0, Math.min(nL, cachedWinW - cachedModW));
+                nT = Math.max(0, Math.min(nT, cachedWinH - cachedModH));
+                modal.style.left = nL + 'px'; 
+                modal.style.top = nT + 'px';
+            });
+        }
+
+        function dragEnd() { 
+            isDrag = false; 
+            document.body.style.userSelect = '';
+            if(dragRAF) cancelAnimationFrame(dragRAF);
+        }
+
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', dragging, { passive: false });
+        document.addEventListener('mouseup', dragEnd);
+        header.addEventListener('touchstart', dragStart, { passive: false });
+        document.addEventListener('touchmove', dragging, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    </script>
+</body>
+</html>
