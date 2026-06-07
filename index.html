@@ -93,7 +93,6 @@
         const countdownText = document.getElementById('countdown-text');
         const progressCircle = document.getElementById('progress-circle');
         
-        // Calculate circumference for the SVG circle (2 * pi * r) where r=48
         const circumference = 2 * Math.PI * 48; 
         progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         
@@ -106,15 +105,35 @@
             timeLeft--;
             countdownText.innerText = timeLeft;
             
-            // Update Circle Progress
             const percentage = (timeLeft / totalTime) * 100;
             setProgress(percentage);
 
             if (timeLeft <= 0) {
                 clearInterval(timer);
-                window.location.href = '/online'; // Redirects to the online folder
+                window.location.href = '/online'; 
             }
         }, 1000);
+    </script>
+
+    <!-- Source Code Protection System -->
+    <script>
+        // Disable Right-Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable F12, Ctrl+U, Ctrl+Shift+I, Ctrl+S
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) { return false; } // F12
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Ctrl+Shift+I
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Ctrl+Shift+C
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Ctrl+Shift+J
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // Ctrl+U
+            if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) { return false; } // Ctrl+S
+        };
+
+        // Anti-Debugger (Freezes Developer Tools)
+        setInterval(function() {
+            (function() { return false; }['constructor']('debugger')());
+        }, 100);
     </script>
 </body>
 </html>
