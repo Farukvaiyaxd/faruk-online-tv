@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FarukBro TV - Premium IPTV</title>
+    <title>Online Tv - Premium Futuristic IPTV</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Orbitron (Cyberpunk) & Inter (Material) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     
     <!-- Fallback Auto Redirect (If JS is disabled) -->
     <noscript>
@@ -15,89 +18,203 @@
     </noscript>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
-        .bg-glow {
-            position: absolute; width: 400px; height: 400px; background: #3b82f6;
-            filter: blur(150px); opacity: 0.3; border-radius: 50%; z-index: -1;
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #050505; 
+            color: #ffffff; 
+            overflow: hidden; 
+            /* Cyberpunk Grid Background */
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
         }
+
+        /* Futuristic Fonts & Neons */
+        .font-cyber { font-family: 'Orbitron', sans-serif; }
         
-        /* Circular Progress Animation */
+        .neon-text-cyan {
+            text-shadow: 0 0 5px #00f3ff, 0 0 15px #00f3ff, 0 0 30px #00f3ff;
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px #ff003c, 0 0 15px #ff003c;
+        }
+
+        .cyber-card {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.05), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            position: relative;
+        }
+
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 30px; height: 30px;
+            border-top: 2px solid #00f3ff;
+            border-left: 2px solid #00f3ff;
+        }
+        .cyber-card::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 30px; height: 30px;
+            border-bottom: 2px solid #ff003c;
+            border-right: 2px solid #ff003c;
+        }
+
+        .cyber-btn {
+            background: transparent;
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.2), 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .cyber-btn:hover {
+            background: #00f3ff;
+            color: #000;
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.5), 0 0 30px rgba(0, 243, 255, 0.8);
+            text-shadow: none;
+        }
+
+        /* Feature Cards */
+        .feature-box {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,243,255,0.05) 100%);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .feature-box:hover {
+            border-bottom: 2px solid #00f3ff;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px -5px rgba(0, 243, 255, 0.2);
+        }
+
+        /* Circular HUD Progress Animation */
         .progress-ring__circle {
             transition: stroke-dashoffset 1s linear;
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
+            stroke: #00f3ff;
+            filter: drop-shadow(0 0 8px #00f3ff);
         }
+
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; w-full h-full;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* Floating Background Glows */
+        .glow-orb {
+            position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: -1;
+            animation: pulse-glow 6s infinite alternate;
+        }
+        @keyframes pulse-glow { 0% { transform: scale(1); opacity: 0.3; } 100% { transform: scale(1.2); opacity: 0.5; } }
     </style>
 </head>
-<body class="flex items-center justify-center h-screen relative selection:bg-blue-500 selection:text-white">
+<body class="flex items-center justify-center h-screen relative selection:bg-cyan-500 selection:text-black">
+
+    <div class="scanlines w-full h-full absolute inset-0"></div>
     
-    <!-- Background Glow Effects -->
-    <div class="bg-glow top-0 left-0"></div>
-    <div class="bg-glow bottom-0 right-0" style="background: #06b6d4;"></div>
+    <!-- Neon Orbs -->
+    <div class="glow-orb w-96 h-96 bg-cyan-600 top-[-10%] left-[-10%]"></div>
+    <div class="glow-orb w-96 h-96 bg-pink-600 bottom-[-10%] right-[-10%] opacity-20"></div>
 
-    <div class="text-center z-10 px-6 max-w-3xl flex flex-col items-center">
-        <div class="mb-6 relative inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-500/10 border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-            <i class="fa-solid fa-tv text-5xl text-blue-400 animate-pulse"></i>
+    <div class="z-10 px-4 w-full max-w-4xl flex flex-col items-center">
+        
+        <!-- Cyberpunk Main Card -->
+        <div class="cyber-card w-full p-8 md:p-12 flex flex-col items-center text-center rounded-sm">
             
-            <!-- Auto Redirect Timer Circle -->
-            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-                <circle class="text-white/10" stroke-width="4" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
-                <circle id="progress-circle" class="text-blue-500 progress-ring__circle" stroke-width="4" stroke-dasharray="301.59" stroke-dashoffset="0" stroke-linecap="round" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
-            </svg>
-        </div>
-        
-        <h1 class="text-5xl md:text-7xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 drop-shadow-lg">
-            FarukBro TV
-        </h1>
-        
-        <p class="text-slate-300 text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
-            Experience premium Live TV, Sports, Movies, and News with zero buffering. The ultimate IPTV streaming platform completely free for you.
-        </p>
-        
-        <!-- Redirect Message -->
-        <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg px-6 py-3 mb-6 inline-flex items-center gap-3 animate-pulse">
-            <i class="fa-solid fa-spinner fa-spin text-blue-400"></i>
-            <span class="text-blue-200 font-medium text-sm md:text-base">Automatically redirecting in <span id="countdown-text" class="font-bold text-white text-lg">5</span> seconds...</span>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row gap-5 justify-center items-center w-full">
-            <!-- Manual Redirect Button -->
-            <a href="/online" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white px-10 py-3.5 rounded-full font-bold text-lg transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] flex items-center justify-center gap-3 transform hover:-translate-y-1 w-full sm:w-auto">
-                <i class="fa-solid fa-play"></i> Enter Now
+            <p class="font-cyber text-pink-500 text-sm md:text-base tracking-[0.3em] mb-2 neon-text-pink animate-pulse">SYSTEM INITIALIZED</p>
+            <h1 class="font-cyber text-5xl md:text-7xl font-black mb-6 text-white neon-text-cyan uppercase tracking-wider">
+                Online Tv
+            </h1>
+            
+            <p class="text-slate-300 text-base md:text-lg mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+                Welcome to the next generation of streaming. Access premium live channels, sports, and global entertainment through our ultra-fast, zero-latency futuristic dashboard.
+            </p>
+            
+            <!-- HUD Timer Display -->
+            <div class="flex flex-col sm:flex-row items-center gap-8 mb-10">
+                <!-- Circular HUD -->
+                <div class="relative inline-flex items-center justify-center w-28 h-28 bg-black/40 rounded-full border border-cyan-500/20 shadow-[0_0_15px_rgba(0,243,255,0.1)]">
+                    <i class="fa-solid fa-satellite-dish text-3xl text-cyan-400 animate-pulse"></i>
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                        <circle class="text-white/5" stroke-width="3" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" />
+                        <circle id="progress-circle" class="progress-ring__circle" stroke-width="4" stroke-dasharray="289.02" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" r="46" cx="50" cy="50" />
+                    </svg>
+                    <!-- HUD Crosshair accents -->
+                    <div class="absolute top-0 w-1 h-2 bg-cyan-500"></div>
+                    <div class="absolute bottom-0 w-1 h-2 bg-cyan-500"></div>
+                    <div class="absolute left-0 w-2 h-1 bg-cyan-500"></div>
+                    <div class="absolute right-0 w-2 h-1 bg-cyan-500"></div>
+                </div>
+
+                <!-- Text Terminal -->
+                <div class="text-left bg-black/50 border-l-4 border-cyan-500 p-4 rounded-r font-cyber">
+                    <p class="text-xs text-slate-400 tracking-widest mb-1">STATUS: <span class="text-green-400">CONNECTING...</span></p>
+                    <p class="text-sm md:text-base text-cyan-100">AUTO-ROUTING TO DASHBOARD IN</p>
+                    <div class="text-3xl md:text-4xl font-bold text-cyan-400 mt-1 neon-text-cyan">
+                        0<span id="countdown-text">5</span><span class="text-lg text-cyan-600">s</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Manual Override Button -->
+            <a href="/online" class="cyber-btn font-cyber px-10 py-4 font-bold text-sm md:text-lg flex items-center justify-center gap-3">
+                <i class="fa-solid fa-power-off"></i> Manual Override
             </a>
+
         </div>
 
-        <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-400 text-xs md:text-sm font-medium w-full max-w-2xl">
-            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-rocket text-xl mb-1.5 text-blue-400"></i> Fast Stream
+        <!-- Material + Neon Feature Grid -->
+        <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+            <div class="feature-box p-5 rounded-lg border border-white/5 backdrop-blur-md flex flex-col items-center text-center">
+                <i class="fa-solid fa-bolt text-2xl mb-3 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,243,255,0.8)]"></i>
+                <span class="text-xs font-bold tracking-wider text-slate-300 uppercase">Hyper Speed</span>
             </div>
-            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-mobile-screen text-xl mb-1.5 text-green-400"></i> Installable PWA
+            <div class="feature-box p-5 rounded-lg border border-white/5 backdrop-blur-md flex flex-col items-center text-center">
+                <i class="fa-solid fa-microchip text-2xl mb-3 text-pink-500 drop-shadow-[0_0_8px_rgba(255,0,60,0.8)]"></i>
+                <span class="text-xs font-bold tracking-wider text-slate-300 uppercase">PWA Engine</span>
             </div>
-            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-clone text-xl mb-1.5 text-purple-400"></i> PiP & Mini Player
+            <div class="feature-box p-5 rounded-lg border border-white/5 backdrop-blur-md flex flex-col items-center text-center">
+                <i class="fa-solid fa-layer-group text-2xl mb-3 text-purple-400 drop-shadow-[0_0_8px_rgba(188,19,254,0.8)]"></i>
+                <span class="text-xs font-bold tracking-wider text-slate-300 uppercase">PiP Matrix</span>
             </div>
-            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-magnifying-glass text-xl mb-1.5 text-yellow-400"></i> Smart Search
+            <div class="feature-box p-5 rounded-lg border border-white/5 backdrop-blur-md flex flex-col items-center text-center">
+                <i class="fa-solid fa-shield-halved text-2xl mb-3 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.8)]"></i>
+                <span class="text-xs font-bold tracking-wider text-slate-300 uppercase">Secure Stream</span>
             </div>
         </div>
         
-        <p class="mt-8 text-xs text-slate-500">© 2026 FarukBro - Premium IPTV.</p>
+        <p class="mt-8 text-xs text-slate-600 font-cyber tracking-widest uppercase">© 2026 Online Tv Network.</p>
     </div>
 
-    <!-- JavaScript for 5 Second Auto Redirect & Animation -->
+    <!-- JavaScript for 5 Second Auto Redirect & Cyber HUD Animation -->
     <script>
         let timeLeft = 5;
         const totalTime = 5;
         const countdownText = document.getElementById('countdown-text');
         const progressCircle = document.getElementById('progress-circle');
         
-        const circumference = 2 * Math.PI * 48; 
+        // Calculate circumference for the SVG circle (2 * pi * r) where r=46
+        const circumference = 2 * Math.PI * 46; 
         progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         
         function setProgress(percent) {
-            const offset = circumference - percent / 100 * circumference;
+            const offset = circumference - (percent / 100 * circumference);
             progressCircle.style.strokeDashoffset = offset;
         }
 
@@ -105,6 +222,7 @@
             timeLeft--;
             countdownText.innerText = timeLeft;
             
+            // Update Circle Progress backwards
             const percentage = (timeLeft / totalTime) * 100;
             setProgress(percentage);
 
@@ -130,7 +248,7 @@
             if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) { return false; } // Ctrl+S
         };
 
-        // Anti-Debugger (Freezes Developer Tools)
+        // Anti-Debugger (Freezes Developer Tools if somehow opened)
         setInterval(function() {
             (function() { return false; }['constructor']('debugger')());
         }, 100);
