@@ -8,12 +8,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Fallback Auto Redirect (If JS is disabled) -->
+    <noscript>
+        <meta http-equiv="refresh" content="5;url=/online" />
+    </noscript>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
         .bg-glow {
             position: absolute; width: 400px; height: 400px; background: #3b82f6;
             filter: blur(150px); opacity: 0.3; border-radius: 50%; z-index: -1;
+        }
+        
+        /* Circular Progress Animation */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s linear;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
         }
     </style>
 </head>
@@ -23,43 +36,85 @@
     <div class="bg-glow top-0 left-0"></div>
     <div class="bg-glow bottom-0 right-0" style="background: #06b6d4;"></div>
 
-    <div class="text-center z-10 px-6 max-w-3xl">
-        <div class="mb-6 inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-500/10 border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+    <div class="text-center z-10 px-6 max-w-3xl flex flex-col items-center">
+        <div class="mb-6 relative inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-500/10 border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
             <i class="fa-solid fa-tv text-5xl text-blue-400 animate-pulse"></i>
+            
+            <!-- Auto Redirect Timer Circle -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                <circle class="text-white/10" stroke-width="4" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
+                <circle id="progress-circle" class="text-blue-500 progress-ring__circle" stroke-width="4" stroke-dasharray="301.59" stroke-dashoffset="0" stroke-linecap="round" stroke="currentColor" fill="transparent" r="48" cx="50" cy="50" />
+            </svg>
         </div>
         
-        <h1 class="text-5xl md:text-7xl font-black mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 drop-shadow-lg">
+        <h1 class="text-5xl md:text-7xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 drop-shadow-lg">
             FarukBro TV
         </h1>
         
-        <p class="text-slate-300 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p class="text-slate-300 text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
             Experience premium Live TV, Sports, Movies, and News with zero buffering. The ultimate IPTV streaming platform completely free for you.
         </p>
         
-        <div class="flex flex-col sm:flex-row gap-5 justify-center items-center">
-            <!-- Redirects to the /online folder -->
-            <a href="/online" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white px-10 py-4 rounded-full font-bold text-lg transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] flex items-center justify-center gap-3 transform hover:-translate-y-1">
-                <i class="fa-solid fa-play text-xl"></i> Launch Web Player
+        <!-- Redirect Message -->
+        <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg px-6 py-3 mb-6 inline-flex items-center gap-3 animate-pulse">
+            <i class="fa-solid fa-spinner fa-spin text-blue-400"></i>
+            <span class="text-blue-200 font-medium text-sm md:text-base">Automatically redirecting in <span id="countdown-text" class="font-bold text-white text-lg">5</span> seconds...</span>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-5 justify-center items-center w-full">
+            <!-- Manual Redirect Button -->
+            <a href="/online" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white px-10 py-3.5 rounded-full font-bold text-lg transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] flex items-center justify-center gap-3 transform hover:-translate-y-1 w-full sm:w-auto">
+                <i class="fa-solid fa-play"></i> Enter Now
             </a>
         </div>
 
-        <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-slate-400 text-sm font-medium">
-            <div class="flex flex-col items-center p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-rocket text-2xl mb-2 text-blue-400"></i> Fast Stream
+        <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-slate-400 text-xs md:text-sm font-medium w-full max-w-2xl">
+            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <i class="fa-solid fa-rocket text-xl mb-1.5 text-blue-400"></i> Fast Stream
             </div>
-            <div class="flex flex-col items-center p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-mobile-screen text-2xl mb-2 text-green-400"></i> Installable PWA
+            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <i class="fa-solid fa-mobile-screen text-xl mb-1.5 text-green-400"></i> Installable PWA
             </div>
-            <div class="flex flex-col items-center p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-clone text-2xl mb-2 text-purple-400"></i> PiP & Mini Player
+            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <i class="fa-solid fa-clone text-xl mb-1.5 text-purple-400"></i> PiP & Mini Player
             </div>
-            <div class="flex flex-col items-center p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <i class="fa-solid fa-magnifying-glass text-2xl mb-2 text-yellow-400"></i> Smart Search
+            <div class="flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <i class="fa-solid fa-magnifying-glass text-xl mb-1.5 text-yellow-400"></i> Smart Search
             </div>
         </div>
         
-        <p class="mt-10 text-xs text-slate-500">© 2026 FarukBro - Premium IPTV.</p>
+        <p class="mt-8 text-xs text-slate-500">© 2026 FarukBro - Premium IPTV.</p>
     </div>
 
+    <!-- JavaScript for 5 Second Auto Redirect & Animation -->
+    <script>
+        let timeLeft = 5;
+        const totalTime = 5;
+        const countdownText = document.getElementById('countdown-text');
+        const progressCircle = document.getElementById('progress-circle');
+        
+        // Calculate circumference for the SVG circle (2 * pi * r) where r=48
+        const circumference = 2 * Math.PI * 48; 
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        
+        function setProgress(percent) {
+            const offset = circumference - percent / 100 * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            countdownText.innerText = timeLeft;
+            
+            // Update Circle Progress
+            const percentage = (timeLeft / totalTime) * 100;
+            setProgress(percentage);
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                window.location.href = '/online'; // Redirects to the online folder
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
